@@ -3,7 +3,7 @@ Bash tool for summing up durations of audio and video files<br/>
 **Linux only!**
 
 ## Dependencies
-- exiftool
+- `exiftool`
 
 ## Installation
 Clone the repository to your home directory:<br/>
