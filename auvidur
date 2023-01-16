@@ -1,54 +1,47 @@
 #!/bin/bash
 
-for i in "$@"; do
-
 seconds=0
 minutes=0
 hours=0
 
+time_sum=0;
+
+echo ""
+echo -e "\033[0;32mCalculating the total duration might take a while\033[0m"
+
+for i in "$@"; do
     command=`exiftool  "$i" | grep -m1 Duration`
-    
+
+        if [[ $command == "" ]]; then
+                >&2 echo -e "\033[0;31mCorrupt file (Ignoring duration): \033[0m" $i
+                continue
+        fi
+
     if [[ $command == *"s"* ]]; then
-    seconds=`exiftool  "$i" | grep -m1 Duration | cut -c 35-36 | sed 's/\.//g'`
+        seconds=`exiftool  "$i" | grep -m1 Duration | cut -c 35-36 | sed 's/\.//g'`
 
     else
     
-    #Getting the durations from the files with exiftool
-    time=`exiftool  "$i" | grep -m1 Duration | grep -o [0-9]:[0-5][0-9]:[0-5][0-9]`
+        #Getting the durations from the files with exiftool
+        time=`exiftool  "$i" | grep -m1 Duration | awk '{print $NF}'`
     
-    #Extracting the hours, minutes and seconds
-    hours=`cut -c 1 <<< $time`
-    minutes=`cut -c 3-4 <<< $time`
-    seconds=`cut -c 6-7 <<< $time`
+        #Extracting the hours, minutes and seconds
+        hours=`cut -c 1 <<< $time`
+        minutes=`cut -c 3-4 <<< $time`
+        seconds=`cut -c 6-7 <<< $time`
     
     fi
     
     #Summing up the minutes and seconds
-    minsum=`expr $minsum + $minutes`
-    secsum=`expr $secsum + $seconds`
-    hsum=`expr $hsum + $hours`
-
+    time_sum=$(( 10#$time_sum + 10#$hours*3600 + 10#$minutes*60 + 10#$seconds ))
 done
 
-    #Conversion to the sexagesimal system of the time
-    secrest=`expr $secsum % 60`
-    secdiv=`expr $secsum / 60`
-    minsum=`expr $minsum + $secdiv`
-    minrest=`expr $minsum % 60`
-    mindiv=`expr $minsum / 60`
-    hsum=`expr $hsum + $mindiv`
-    
-    #Leading zero in case the minute and/or second is smaller than 10
-    seczero=""
-    minzero=""
-    
-    if [ $minrest -lt 10 ]; then
-    minzero=0
-    fi
-    
-    if [ $secrest -lt 10 ]; then
-    seczero=0
-    fi
-  
-  #Output of the result in the normal time format
-echo Total duration: $hsum:$minzero$minrest:$seczero$secrest
+
+#Conversion to the sexagesimal system of the time
+hours=$(( $time_sum / 3600 ))
+minutes=$(( ($time_sum - $hours * 3600) / 60 ))
+seconds=$(( $time_sum - $hours * 3600 - $minutes * 60 ))
+
+#Output of the result in the normal time format
+echo ""
+printf 'Total duration: %02d:%02d:%02d\n' $hours $minutes $seconds
